@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_pro/carousel_pro.dart';
 import '../compount/mydrawer.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
 
 class Home extends StatefulWidget {
   State<StatefulWidget> createState() {
@@ -9,6 +12,28 @@ class Home extends StatefulWidget {
 }
 
 class HomeState extends State<Home> {
+  var listsearch = [];
+  Future getData() async {
+    //var url = "http://10.0.2.2:80/odhiya/search.php";
+    var response = await http.get(Uri.http('10.0.2.2:80', 'odhiya/search.php'));
+
+    var responsebody = jsonDecode(response.body);
+
+    print(responsebody);
+
+    for (int i = 0; i < responsebody.length; i++) {
+      listsearch.add(responsebody[i]["race"]);
+    }
+    print(listsearch);
+  }
+
+  @override
+  void initState() {
+    getData();
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Directionality(
@@ -22,8 +47,12 @@ class HomeState extends State<Home> {
             elevation: 8, //shadow
             actions: [
               IconButton(
+                //icon search
                 icon: Icon(Icons.search),
-                onPressed: () {},
+                onPressed: () {
+                  showSearch(
+                      context: context, delegate: DataSearch(list: listsearch));
+                },
               )
             ],
 
@@ -101,5 +130,53 @@ class HomeState extends State<Home> {
             ],
           )),
     );
+  }
+}
+
+//search adveced
+class DataSearch extends SearchDelegate<String> {
+  List<dynamic> list;
+  DataSearch({this.list});
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    // action for appbar
+    return [
+      IconButton(
+        onPressed: () {},
+        icon: Icon(Icons.clear),
+      )
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    // Icon leading
+    return IconButton(
+      onPressed: () {
+        close(context, null);
+      },
+      icon: Icon(Icons.arrow_back),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    // results search
+    return null;
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    var searchlist =
+        query.isEmpty ? list : list.where((p) => p.startsWith(query)).toList();
+    // show when someone search for somthing
+    return ListView.builder(
+        itemCount: searchlist.length,
+        itemBuilder: (context, i) {
+          return ListTile(
+            leading: Icon(Icons.mobile_screen_share),
+            title: Text(searchlist[i]),
+          );
+        });
   }
 }
